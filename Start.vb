@@ -225,10 +225,10 @@ Public Class Start
         NumberOfPropertySelected = GetCheckedItemCount(CheckedListBoxPropertyToExport)
 
         ' Créer un tableau à deux dimensions (matrice)
-        Dim DocumentsPropertiesToExportArray(NumberOfDocumentSelected - 1, NumberOfPropertySelected - 1) As Object
+        Dim DocumentsPropertiesToExportArray(NumberOfDocumentSelected, NumberOfPropertySelected - 1) As Object
 
         ' Exemple : initialisation du tableau avec des valeurs
-        For documentIndex As Integer = 0 To NumberOfDocumentSelected - 1
+        For documentIndex As Integer = 1 To NumberOfDocumentSelected - 1
 
             Dim ActiveDocumentId As DocumentId = DocumentIdsToModify.Item(documentIndex)
             Dim ActiveDocumentPdmObjectId As PdmObjectId = DocumentPdmIdsToModify.Item(documentIndex)
@@ -237,27 +237,43 @@ Public Class Start
 
             'Gestion Nom coché
             If CheckedListBoxPropertyToExport.GetItemChecked(0) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Nom"
+                End If
+
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetName(ActiveDocumentPdmObjectId)
-                ActiveColumn = +1
+                ActiveColumn += 1
             End If
 
             If CheckedListBoxPropertyToExport.GetItemChecked(1) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Désignation"
+                End If
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetDescription(ActiveDocumentPdmObjectId)
-                ActiveColumn = +1
+                ActiveColumn += 1
             End If
 
             If CheckedListBoxPropertyToExport.GetItemChecked(2) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence"
+                End If
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetPartNumber(ActiveDocumentPdmObjectId)
-                ActiveColumn = +1
+                ActiveColumn += 1
             End If
 
 
             If CheckedListBoxPropertyToExport.GetItemChecked(3) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Fabricant"
+                End If
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturer(ActiveDocumentPdmObjectId)
-                ActiveColumn = +1
+                ActiveColumn += 1
             End If
 
             If CheckedListBoxPropertyToExport.GetItemChecked(4) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence fabricant"
+                End If
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturerPartNumber(ActiveDocumentPdmObjectId)
                 ActiveColumn = +1
             End If
