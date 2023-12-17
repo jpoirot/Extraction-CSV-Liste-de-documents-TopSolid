@@ -122,7 +122,7 @@ Partial Class Start
         'CheckedListBoxPropertyToExport
         '
         Me.CheckedListBoxPropertyToExport.FormattingEnabled = True
-        Me.CheckedListBoxPropertyToExport.Items.AddRange(New Object() {"Nom", "Désignation", "Référence", "Fabricant", "RéférenceFabricant", "Chemin"})
+        Me.CheckedListBoxPropertyToExport.Items.AddRange(New Object() {"Nom", "Désignation", "Référence", "Fabricant", "RéférenceFabricant", "Type de document"})
         Me.CheckedListBoxPropertyToExport.Location = New System.Drawing.Point(322, 147)
         Me.CheckedListBoxPropertyToExport.Name = "CheckedListBoxPropertyToExport"
         Me.CheckedListBoxPropertyToExport.Size = New System.Drawing.Size(445, 94)

@@ -15,6 +15,11 @@ Public Class Start
 
     Private Sub Start_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
+        'Coche automatique des item de CheckedListBoxPropertyToExport
+        For i As Integer = 0 To CheckedListBoxPropertyToExport.Items.Count - 1
+            CheckedListBoxPropertyToExport.SetItemChecked(i, True)
+        Next
+
         'Connection à TopSolid
         Try
             TopSolidHost.Connect()  'Connection à TopSolid
@@ -235,7 +240,7 @@ Public Class Start
 
             Dim ActiveColumn As Integer = 0
 
-            'Gestion Nom coché
+            'Gestion Nom
             If CheckedListBoxPropertyToExport.GetItemChecked(0) Then
                 If documentIndex = 1 Then
                     DocumentsPropertiesToExportArray(0, ActiveColumn) = "Nom"
@@ -245,6 +250,7 @@ Public Class Start
                 ActiveColumn += 1
             End If
 
+            'Gestion Désignation
             If CheckedListBoxPropertyToExport.GetItemChecked(1) Then
                 If documentIndex = 1 Then
                     DocumentsPropertiesToExportArray(0, ActiveColumn) = "Désignation"
@@ -253,6 +259,7 @@ Public Class Start
                 ActiveColumn += 1
             End If
 
+            'Gestion Référence
             If CheckedListBoxPropertyToExport.GetItemChecked(2) Then
                 If documentIndex = 1 Then
                     DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence"
@@ -261,7 +268,7 @@ Public Class Start
                 ActiveColumn += 1
             End If
 
-
+            'Gestion Fabricant
             If CheckedListBoxPropertyToExport.GetItemChecked(3) Then
                 If documentIndex = 1 Then
                     DocumentsPropertiesToExportArray(0, ActiveColumn) = "Fabricant"
@@ -270,11 +277,21 @@ Public Class Start
                 ActiveColumn += 1
             End If
 
+            'Gestion Référence Fabricant
             If CheckedListBoxPropertyToExport.GetItemChecked(4) Then
                 If documentIndex = 1 Then
                     DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence fabricant"
                 End If
                 DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturerPartNumber(ActiveDocumentPdmObjectId)
+                ActiveColumn = +1
+            End If
+
+            'Gestion Type de document
+            If CheckedListBoxPropertyToExport.GetItemChecked(5) Then
+                If documentIndex = 1 Then
+                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Type de document"
+                End If
+                TopSolidHost.Pdm.GetType(ActiveDocumentPdmObjectId, DocumentsPropertiesToExportArray(documentIndex, ActiveColumn))
                 ActiveColumn = +1
             End If
 
@@ -326,4 +343,6 @@ Public Class Start
     Private Sub TextBoxCSVName_TextChanged(sender As Object, e As EventArgs) Handles TextBoxCSVName.TextChanged
         CSVDocumentName = TextBoxCSVName.Text
     End Sub
+
+
 End Class
