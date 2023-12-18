@@ -172,8 +172,12 @@ Partial Class Start
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.TreeViewProjectFolders)
         Me.Controls.Add(Me.TextBoxProjectName)
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
         Me.Name = "Start"
-        Me.Text = "Form1"
+        Me.ShowIcon = False
+        Me.ShowInTaskbar = False
+        Me.Text = "Extraction CSV liste de documents TopSolid"
         Me.ResumeLayout(False)
         Me.PerformLayout()
 

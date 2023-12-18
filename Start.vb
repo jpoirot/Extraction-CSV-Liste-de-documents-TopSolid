@@ -103,25 +103,231 @@ Public Class Start
     End Sub
 
     Private Sub FolderBrowserDialog_Click(sender As Object, e As EventArgs) Handles FolderBrowserDialog.Click
+        Try
+            'Récupération du chemin du bureau
+            Dim desktopPath As String = GetDesktopFolderPath()
 
-        'Récupération du chemin du bureau
-        Dim desktopPath As String = GetDesktopFolderPath()
+
+            ' Configurer le FolderBrowserDialog
+            With FolderBrowserDialogCSVDestination
+                .Description = "Sélectionner un dossier de destination"
+                ' Définir le dossier de départ (si nécessaire)
+                .SelectedPath = desktopPath
+                .ShowNewFolderButton = True ' Autoriser la création d'un nouveau dossier
+            End With
+
+            ' Afficher le FolderBrowserDialog et vérifier si l'utilisateur a appuyé sur OK
+            If FolderBrowserDialogCSVDestination.ShowDialog() = DialogResult.OK Then
+                ' Récupérer le chemin du dossier sélectionné
+                SelectedCSVDestinationFolder = FolderBrowserDialogCSVDestination.SelectedPath
+                TextBoxSelectedCSVDestinationFolder.Text = SelectedCSVDestinationFolder
+            End If
+        Catch ex As Exception
+            MsgBox($"Erreur lors de la sélection du dossier de destination : {ex.Message}")
+        End Try
+    End Sub
 
 
-        ' Configurer le FolderBrowserDialog
-        With FolderBrowserDialogCSVDestination
-            .Description = "Sélectionner un dossier de destination"
-            ' Définir le dossier de départ (si nécessaire)
-            .SelectedPath = desktopPath
-            .ShowNewFolderButton = True ' Autoriser la création d'un nouveau dossier
-        End With
+    Private Sub ButtonExecute_Click(sender As Object, e As EventArgs) Handles ButtonExecute.Click
+        Try
+            ' Récupération de tous les dossiers cochés
+            For Each node As TreeNode In TreeViewProjectFolders.Nodes
+                CheckSubNodes(node)
+            Next
 
-        ' Afficher le FolderBrowserDialog et vérifier si l'utilisateur a appuyé sur OK
-        If FolderBrowserDialogCSVDestination.ShowDialog() = DialogResult.OK Then
-            ' Récupérer le chemin du dossier sélectionné
-            SelectedCSVDestinationFolder = FolderBrowserDialogCSVDestination.SelectedPath
-            TextBoxSelectedCSVDestinationFolder.Text = SelectedCSVDestinationFolder
-        End If
+            Dim DocumentIdsToModify As New List(Of DocumentId)
+            Dim DocumentPdmIdsToModify As New List(Of PdmObjectId)
+
+            ' Remplacement de la méthode manuelle ci-après
+            Try
+                For Each FolderIdToModify As PdmObjectId In FolderIdsToModify
+                    AddSubDocuments(FolderIdToModify, DocumentPdmIdsToModify, CheckBoxRecursiveSelection.Checked, True)
+                Next
+            Catch ex As Exception
+                MsgBox("Echec récupération des Pdm document Ids dans les dossiers sélectionnés" + ex.Message)
+            End Try
+
+            Try
+                For Each DocumentPdmIdToModify In DocumentPdmIdsToModify
+                    DocumentIdsToModify.Add(TopSolidHost.Documents.GetDocument(DocumentPdmIdToModify))
+                Next
+            Catch ex As Exception
+                MsgBox("Echec récupération des document Ids dans les dossiers sélectionnés" + ex.Message)
+            End Try
+
+            If DocumentIdsToModify.Count = 0 Then
+                MsgBox("Aucun document à modifier")
+                Exit Sub
+            End If
+
+            ' Nombre de documents sélectionnés
+            Dim NumberOfDocumentSelected As Integer
+            NumberOfDocumentSelected = DocumentIdsToModify.Count
+
+            ' Récupération du nombre de propriétés sélectionnées
+            Dim NumberOfPropertySelected As Integer
+            NumberOfPropertySelected = GetCheckedItemCount(CheckedListBoxPropertyToExport)
+
+            ' Créer un tableau à deux dimensions (matrice)
+            Dim DocumentsPropertiesToExportArray(NumberOfDocumentSelected, NumberOfPropertySelected - 1) As Object
+
+            ' Création de la barre de progression simulée
+            Dim progressBar As New ProgressBarForm
+            progressBar.Show(Me)
+
+            ' Initialisation du chronomètre
+            Dim stopwatch As New Stopwatch()
+            stopwatch.Start()
+
+
+            ' Initialisation du tableau avec des valeurs
+            For documentIndex As Integer = 0 To NumberOfDocumentSelected - 1
+                Dim ActiveDocumentId As DocumentId = DocumentIdsToModify.Item(documentIndex)
+                Dim ActiveDocumentPdmObjectId As PdmObjectId = DocumentPdmIdsToModify.Item(documentIndex)
+
+                Dim ActiveColumn As Integer = 0
+
+                ' Gestion Nom
+                If CheckedListBoxPropertyToExport.GetItemChecked(0) Then
+                    If documentIndex = 0 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Nom"
+                    End If
+
+                    DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetName(ActiveDocumentPdmObjectId)
+                    ActiveColumn += 1
+                End If
+
+                'Gestion Désignation
+                If CheckedListBoxPropertyToExport.GetItemChecked(1) Then
+                    If documentIndex = 1 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Désignation"
+                    End If
+                    DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetDescription(ActiveDocumentPdmObjectId)
+                    ActiveColumn += 1
+                End If
+
+                'Gestion Référence
+                If CheckedListBoxPropertyToExport.GetItemChecked(2) Then
+                    If documentIndex = 1 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence"
+                    End If
+                    DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetPartNumber(ActiveDocumentPdmObjectId)
+                    ActiveColumn += 1
+                End If
+
+                'Gestion Fabricant
+                If CheckedListBoxPropertyToExport.GetItemChecked(3) Then
+                    If documentIndex = 1 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Fabricant"
+                    End If
+                    DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturer(ActiveDocumentPdmObjectId)
+                    ActiveColumn += 1
+                End If
+
+                'Gestion Référence Fabricant
+                If CheckedListBoxPropertyToExport.GetItemChecked(4) Then
+                    If documentIndex = 1 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence fabricant"
+                    End If
+                    DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturerPartNumber(ActiveDocumentPdmObjectId)
+                    ActiveColumn = +1
+                End If
+
+                'Gestion Type de document
+                If CheckedListBoxPropertyToExport.GetItemChecked(5) Then
+                    If documentIndex = 1 Then
+                        DocumentsPropertiesToExportArray(0, ActiveColumn) = "Type de document"
+                    End If
+                    TopSolidHost.Pdm.GetType(ActiveDocumentPdmObjectId, DocumentsPropertiesToExportArray(documentIndex, ActiveColumn))
+                    ActiveColumn = +1
+                End If
+
+
+                ' Simulation de la progression en fonction du nombre de documents traités
+                Dim progressPercentage As Integer = CInt((documentIndex + 1) / NumberOfDocumentSelected * 100)
+                progressBar.UpdateProgressBar(progressPercentage)
+
+                ' Arrêt du chronomètre et calcul du temps écoulé
+                stopwatch.Stop()
+                Dim elapsedTime As TimeSpan = stopwatch.Elapsed
+
+                ' Calcul du temps restant (estimé)
+                Dim remainingTime As TimeSpan = TimeSpan.FromMilliseconds((elapsedTime.TotalMilliseconds / (documentIndex + 1)) * (NumberOfDocumentSelected - documentIndex - 1))
+
+                ' Mise à jour de l'état
+                progressBar.UpdateStatus($"Documents traités : {documentIndex + 1} / {NumberOfDocumentSelected} | Temps écoulé : {elapsedTime.ToString("mm\:ss")} | Temps restant estimé : {remainingTime.ToString("mm\:ss")}")
+
+                ' Redémarrage du chronomètre
+                stopwatch.Start()
+
+                Application.DoEvents() ' Permet d'actualiser l'interface graphique sans bloquer l'exécution
+            Next
+
+            ' Arrêt final du chronomètre
+            stopwatch.Stop()
+
+            ' Fermeture de la barre de progression
+            progressBar.Close()
+
+
+            ' Export du CSV
+            Dim csvFilePath As String = Path.Combine(SelectedCSVDestinationFolder, $"{CSVDocumentName}.csv")
+            Using writer As New StreamWriter(csvFilePath, False, System.Text.Encoding.UTF8)
+                For i As Integer = 0 To NumberOfDocumentSelected - 1
+                    For j As Integer = 0 To NumberOfPropertySelected - 1
+                        ' Écrire la valeur dans le fichier avec le séparateur ;
+                        writer.Write(DocumentsPropertiesToExportArray(i, j))
+                        ' Ajouter le séparateur si ce n'est pas la dernière colonne
+                        If j < NumberOfPropertySelected - 1 Then
+                            writer.Write(";")
+                        End If
+                    Next
+                    ' Passer à la ligne suivante
+                    writer.WriteLine()
+                Next
+            End Using
+
+            ' Ouvrir le document résultant
+            Process.Start(csvFilePath)
+
+        Catch ex As Exception
+            MsgBox($"Une erreur s'est produite lors de l'exécution : {ex.Message}")
+        End Try
+    End Sub
+
+
+
+    ''' <summary>
+    ''' Fonction récursive pour ajouter des sous documents
+    ''' </summary>
+    ''' <param name="parentFolderId">PdmObjectId du dossier parent</param>
+    ''' <param name="documentPdmIds">List des documents à compléter</param>
+    ''' <param name="SubFolder">Recherche ou non les sous dossiers</param>
+    ''' <param name="SubDocument">Recherche ou non les sous documents</param>
+    Private Sub AddSubDocuments(parentFolderId As PdmObjectId, ByRef documentPdmIds As List(Of PdmObjectId), SubFolder As Boolean, SubDocument As Boolean)
+        Try
+            Dim subFolderIds As New List(Of PdmObjectId)
+            Dim subDocumentIds As New List(Of PdmObjectId)
+
+            TopSolidHost.Pdm.GetConstituents(parentFolderId, subFolderIds, subDocumentIds)
+            documentPdmIds.AddRange(subDocumentIds)
+
+            If SubDocument Then
+                For Each subDocumentId As PdmObjectId In subDocumentIds
+                    Dim subDocumentName As String = TopSolidHost.Pdm.GetName(subDocumentId)
+                    AddSubDocuments(subDocumentId, documentPdmIds, SubFolder, SubDocument)
+                Next
+            End If
+
+            If SubFolder Then
+                For Each subFolderId As PdmObjectId In subFolderIds
+                    AddSubDocuments(subFolderId, documentPdmIds, SubFolder, SubDocument)
+                Next
+
+            End If
+        Catch ex As Exception
+            MsgBox($"Erreur lors de l'ajout des sous-documents : {ex.Message}")
+        End Try
     End Sub
 
     ' Fonction permettant de récupérer le chemin vers le bureau de l'utilisateur via les registres
@@ -148,180 +354,18 @@ Public Class Start
         Return String.Empty
     End Function
 
-    'Fonction récursive pour récupérer des sous noeuds
+    ' Fonction récursive pour récupérer des sous-noeuds
     Private Sub CheckSubNodes(node As TreeNode)
-
-        If node.Checked Then
-            FolderIdsToModify.Add(DirectCast(node.Tag, PdmObjectId))
-        End If
-        For Each subNode As TreeNode In node.Nodes
-            CheckSubNodes(subNode)
-        Next
-
-    End Sub
-
-
-    ''' <summary>
-    ''' Fonction récursive pour ajouter des sous documents
-    ''' </summary>
-    ''' <param name="parentFolderId">PdmObjectId du dossier parent</param>
-    ''' <param name="documentPdmIds">List des documents à compléter</param>
-    ''' <param name="SubFolder">Recherche ou non les sous dossiers</param>
-    ''' <param name="SubDocument">Recherche ou non les sous documents</param>
-    Private Sub AddSubDocuments(parentFolderId As PdmObjectId, ByRef documentPdmIds As List(Of PdmObjectId), SubFolder As Boolean, SubDocument As Boolean)
-        Dim subFolderIds As New List(Of PdmObjectId)
-        Dim subDocumentIds As New List(Of PdmObjectId)
-
-        TopSolidHost.Pdm.GetConstituents(parentFolderId, subFolderIds, subDocumentIds)
-        documentPdmIds.AddRange(subDocumentIds)
-
-        If SubDocument Then
-            For Each subDocumentId As PdmObjectId In subDocumentIds
-                Dim subDocumentName As String = TopSolidHost.Pdm.GetName(subDocumentId)
-                AddSubDocuments(subDocumentId, documentPdmIds, SubFolder, SubDocument)
-            Next
-        End If
-
-        If SubFolder Then
-            For Each subFolderId As PdmObjectId In subFolderIds
-                AddSubDocuments(subFolderId, documentPdmIds, SubFolder, SubDocument)
-            Next
-
-        End If
-    End Sub
-
-    Private Sub ButtonExecute_Click(sender As Object, e As EventArgs) Handles ButtonExecute.Click
-        For Each node As TreeNode In TreeViewProjectFolders.Nodes ' Récupération de tous les dossiers cochés
-            CheckSubNodes(node)
-        Next
-
-        Dim DocumentIdsToModify As New List(Of DocumentId)
-        Dim DocumentPdmIdsToModify As New List(Of PdmObjectId)
-
-        'Remplacement de la méthode manuel ci après
         Try
-            For Each FolderIdToModify As PdmObjectId In FolderIdsToModify
-
-                AddSubDocuments(FolderIdToModify, DocumentPdmIdsToModify, CheckBoxRecursiveSelection.Checked, True)
+            If node.Checked Then
+                FolderIdsToModify.Add(DirectCast(node.Tag, PdmObjectId))
+            End If
+            For Each subNode As TreeNode In node.Nodes
+                CheckSubNodes(subNode)
             Next
         Catch ex As Exception
-            MsgBox("Echec récupération des Pdm document Ids dans les dossiers sélectionnés" + ex.Message)
+            MsgBox($"Erreur lors de la vérification des sous-noeuds : {ex.Message}")
         End Try
-
-        Try
-            For Each DocumentPdmIdToModify In DocumentPdmIdsToModify
-                DocumentIdsToModify.Add(TopSolidHost.Documents.GetDocument(DocumentPdmIdToModify))
-            Next
-        Catch ex As Exception
-            MsgBox("Echec récupération des document Ids dans les dossiers sélectionnés" + ex.Message)
-        End Try
-
-        If DocumentIdsToModify.Count = 0 Then
-            MsgBox("Aucun document à modifier")
-            Exit Sub
-        End If
-
-        'Nombre de documents sélectionné
-        Dim NumberOfDocumentSelected As Integer
-        NumberOfDocumentSelected = DocumentIdsToModify.Count
-
-        'Récupération du nombre de propriété sélectionné
-        Dim NumberOfPropertySelected As Integer
-        NumberOfPropertySelected = GetCheckedItemCount(CheckedListBoxPropertyToExport)
-
-        ' Créer un tableau à deux dimensions (matrice)
-        Dim DocumentsPropertiesToExportArray(NumberOfDocumentSelected, NumberOfPropertySelected - 1) As Object
-
-        ' Exemple : initialisation du tableau avec des valeurs
-        For documentIndex As Integer = 1 To NumberOfDocumentSelected - 1
-
-            Dim ActiveDocumentId As DocumentId = DocumentIdsToModify.Item(documentIndex)
-            Dim ActiveDocumentPdmObjectId As PdmObjectId = DocumentPdmIdsToModify.Item(documentIndex)
-
-            Dim ActiveColumn As Integer = 0
-
-            'Gestion Nom
-            If CheckedListBoxPropertyToExport.GetItemChecked(0) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Nom"
-                End If
-
-                DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetName(ActiveDocumentPdmObjectId)
-                ActiveColumn += 1
-            End If
-
-            'Gestion Désignation
-            If CheckedListBoxPropertyToExport.GetItemChecked(1) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Désignation"
-                End If
-                DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetDescription(ActiveDocumentPdmObjectId)
-                ActiveColumn += 1
-            End If
-
-            'Gestion Référence
-            If CheckedListBoxPropertyToExport.GetItemChecked(2) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence"
-                End If
-                DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetPartNumber(ActiveDocumentPdmObjectId)
-                ActiveColumn += 1
-            End If
-
-            'Gestion Fabricant
-            If CheckedListBoxPropertyToExport.GetItemChecked(3) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Fabricant"
-                End If
-                DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturer(ActiveDocumentPdmObjectId)
-                ActiveColumn += 1
-            End If
-
-            'Gestion Référence Fabricant
-            If CheckedListBoxPropertyToExport.GetItemChecked(4) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Référence fabricant"
-                End If
-                DocumentsPropertiesToExportArray(documentIndex, ActiveColumn) = TopSolidHost.Pdm.GetManufacturerPartNumber(ActiveDocumentPdmObjectId)
-                ActiveColumn = +1
-            End If
-
-            'Gestion Type de document
-            If CheckedListBoxPropertyToExport.GetItemChecked(5) Then
-                If documentIndex = 1 Then
-                    DocumentsPropertiesToExportArray(0, ActiveColumn) = "Type de document"
-                End If
-                TopSolidHost.Pdm.GetType(ActiveDocumentPdmObjectId, DocumentsPropertiesToExportArray(documentIndex, ActiveColumn))
-                ActiveColumn = +1
-            End If
-
-        Next
-
-
-        'Export du CSV
-
-        ' Chemin de destination et nom du fichier CSV
-        Dim csvFilePath As String = Path.Combine(SelectedCSVDestinationFolder, $"{CSVDocumentName}.csv")
-
-        ' Écrire les données dans le fichier CSV
-        Using writer As New StreamWriter(csvFilePath, False, System.Text.Encoding.UTF8)
-            For i As Integer = 0 To NumberOfDocumentSelected - 1
-                For j As Integer = 0 To NumberOfPropertySelected - 1
-                    ' Écrire la valeur dans le fichier avec le séparateur ;
-                    writer.Write(DocumentsPropertiesToExportArray(i, j))
-                    ' Ajouter le séparateur si ce n'est pas la dernière colonne
-                    If j < DocumentsPropertiesToExportArray.GetLength(1) - 1 Then
-                        writer.Write(";")
-                    End If
-                Next
-                ' Passer à la ligne suivante
-                writer.WriteLine()
-            Next
-        End Using
-
-        ' Ouvrir le document résultant
-        Process.Start(csvFilePath)
-
     End Sub
 
     Private Function GetCheckedItemCount(checkedListBox As CheckedListBox) As Integer
@@ -344,5 +388,40 @@ Public Class Start
         CSVDocumentName = TextBoxCSVName.Text
     End Sub
 
+    ' Classe pour simuler une barre de progression
+    Private Class ProgressBarForm
+        Inherits Form
 
+        Private progressBar As New ProgressBar With {
+        .Dock = DockStyle.Fill,
+        .Style = ProgressBarStyle.Continuous ' Ajoutez cette ligne pour définir le style de dessin
+    }
+
+        Private statusLabel As New Label With {
+        .Dock = DockStyle.Bottom,
+        .AutoSize = False,
+        .TextAlign = ContentAlignment.MiddleCenter
+    }
+
+        Public Sub New()
+            Controls.Add(progressBar)
+            Controls.Add(statusLabel)
+            Text = "Progression"
+            Size = New Size(500, 75)
+            ShowIcon = False
+            ShowInTaskbar = False
+            MaximizeBox = False
+            StartPosition = FormStartPosition.CenterScreen ' Définir le démarrage au centre de l'écran
+        End Sub
+
+        Public Sub UpdateProgressBar(value As Integer)
+            progressBar.Value = value
+            Refresh() ' Mettre à jour immédiatement l'interface utilisateur sans interrompre le code
+        End Sub
+
+        Public Sub UpdateStatus(status As String)
+            statusLabel.Text = status
+            Refresh() ' Mettre à jour immédiatement l'interface utilisateur sans interrompre le code
+        End Sub
+    End Class
 End Class
