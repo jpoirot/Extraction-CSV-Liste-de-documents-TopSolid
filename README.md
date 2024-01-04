@@ -14,6 +14,12 @@ Exportation vers un fichier CSV : Les données sont exportées vers un fichier C
 Progression et estimation du temps : Une barre de progression est affichée pendant l'exportation, avec des informations sur le nombre de documents traités, le temps écoulé et le temps restant estimé.
 
 Instructions d'utilisation
+Téléchargement du projet compilé: Téléchargez le fichier Release.zip
+
+Installation: Dezipez le fichier à l'endroit souhaité
+
+Lancement: Exécutez le fichier nommé Extraction CSV Liste de documents TopSolid.exe
+ 
 Connexion à TopSolid : Assurez-vous d'avoir un TopSolid ouvert avec un projet actif avant de lancer l'application.
 
 Sélection des dossiers : Utilisez le TreeView sur la gauche pour sélectionner les dossiers TopSolid à partir desquels vous souhaitez exporter des données.
